@@ -8993,7 +8993,7 @@ sounds:toggle({name = "only on kill", flag = "onlyonkill"})
 				end
 				return oldReceive(self, ...)
 			end)
-
+--[[
 			task.spawn(function()
 				for _, message in services.logService:GetLogHistory() do
 					print(message.Message)
@@ -9002,7 +9002,7 @@ sounds:toggle({name = "only on kill", flag = "onlyonkill"})
 					end
 				end
 			end)
-
+]]
 			task.spawn(function()
 				task.wait(5)
 				local interface = modules.CharacterInterface
@@ -14560,50 +14560,11 @@ task.spawn(function()
 
 	local userIdList, customIconList, tracked_players = {}, {}, {}
 
-	local function connect()
-		local success, ws = pcall(function()
-			return WebSocket.connect("wss://seraph.wtf/ws")
-		end)
-		if success and ws then
-			return ws
-		else
-			createNotification({text = "Failed to connect to Websocket, retrying in 1 second..."})
-			task.wait(1)
-			return connect()
-		end
-	end
 
 
 	local OnClose = Instance.new("BindableEvent")
 
 	local OnMessage = Instance.new("BindableEvent")
-
-	task.spawn(function()
-		task.wait(2)
-		local webSocket = connect()
-		webSocket.OnClose:Connect(function(...)
-			OnClose:Fire(...)
-		end)
-		webSocket.OnMessage:Connect(function(...)
-			OnMessage:Fire(...)
-		end)
-	end)
-
-	OnClose.Event:Connect(function(code, reason)
-		createNotification({text = "Websocket closed!"})
-		task.wait(.1)
-		createNotification({text = "Attempting to reconnect in 2 seconds..."})
-		task.delay(2, function()
-			webSocket = connect() --WebSocket.connect("wss://ws.seraph.wtf:1000")
-			webSocket.OnClose:Connect(function(...)
-				OnClose:Fire(...)
-			end)
-			webSocket.OnMessage:Connect(function(...)
-				OnMessage:Fire(...)
-			end)
-			createNotification({text = "Reconnected to Websocket!"})
-		end)
-	end)
 
 	task.spawn(function()
 
@@ -14652,12 +14613,7 @@ task.spawn(function()
 					if gui.Text:sub(1,1) == "@" then
 						local ogText = gui.Text
 						gui.Text = ""
-						return webSocket:Send(http_service:JSONEncode({
-							type = "addChatMessage",
-							name = seraphAcc.username or seraphAcc.name or lp.Name,
-							message = ogText:sub(2),
-							hexColor = seraphAcc.hexColor or "#FFF"
-						}))
+
 
 					end
 					for _, con in selfCons do
@@ -14678,38 +14634,6 @@ task.spawn(function()
 				end
 			end
 		end
-	--[[
-		services.textChatService.SendingMessage:Connect(function(textChatMessage)
-			if textChatMessage and textChatMessage.Text:sub(1,1) == "@" then
-				local ogText = textChatMessage.Text
-				textChatMessage.Text = "/e "
-				textChatMessage.TextChannel = nil
-				return webSocket:Send(http_service:JSONEncode({
-					type = "addChatMessage",
-					name = seraphAcc.username or seraphAcc.name or lp.Name,
-					message = ogText:sub(2),
-					hexColor = seraphAcc.hexColor or "#FFF"
-				}))
-			end
-		end)
-	--[[
-		for _,v in services.textChatService.TextChannels:GetChildren() do
-			local wrapper__ = coroutine.wrap(function()
-				local old; old = hookfunction(v.SendAsync, function(self, message, ...)
-					if message and message:sub(1,1) == "@" then
-						return webSocket:Send(http_service:JSONEncode({
-							type = "addChatMessage",
-							name = seraphAcc.username or seraphAcc.name or lp.Name,
-							message = message:sub(2),
-							hexColor = seraphAcc.hexColor or "#FFF"
-						}))
-					end
-					return old(self, message, ...)
-				end)
-			end)
-			pcall(wrapper__)
-		end
-	]]
 		OnMessage.Event:Connect(function(message)
 			local data = http_service:JSONDecode(message)
 			if not data then return end
@@ -15394,32 +15318,20 @@ task.spawn(function()
 	end
 
 	services.runService:BindToRenderStep("movement0x078DE4A", Enum.RenderPriority.Character.Value, function(dt)
-		if tick() - elapseTime >= 1 and webSocket and webSocket.Send then
+		if tick() - elapseTime >= 1 then
 			elapseTime = tick()
-			webSocket:Send(http_service:JSONEncode({
-				type = "connect",
-				userId = tostring(lp.UserId),
-			}))
+
 			if currentText == "development" then
-				webSocket:Send(http_service:JSONEncode({
-					type = "setCustomIcon",
-					userId = tostring(lp.UserId),
-				}))
+
 			end
 
 			task.delay(0.2, function()
 				if flags.headless_flag then
-					webSocket:Send(http_service:JSONEncode({
-						type = "headless",
-						userId = tostring(lp.UserId),
-					}))
+
 				end
 
 				if flags.fiery_flag then
-					webSocket:Send(http_service:JSONEncode({
-						type = "fieryHorns",
-						userId = tostring(lp.UserId),
-					}))
+
 				end
 			end)
 		end
